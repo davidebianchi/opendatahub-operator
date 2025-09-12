@@ -121,7 +121,6 @@ var (
 			componentApi.KueueComponentName:                kueueTestSuite,
 			componentApi.TrainingOperatorComponentName:     trainingOperatorTestSuite,
 			componentApi.DataSciencePipelinesComponentName: dataSciencePipelinesTestSuite,
-			componentApi.CodeFlareComponentName:            codeflareTestSuite,
 			componentApi.WorkbenchesComponentName:          workbenchesTestSuite,
 			componentApi.KserveComponentName:               kserveTestSuite,
 			componentApi.ModelMeshServingComponentName:     modelMeshServingTestSuite,

@@ -370,7 +370,6 @@ func (tc *DSCTestCtx) ValidateComponentsDeploymentFailure(t *testing.T) {
 
 	// To handle upstream/downstream i trimmed prefix(odh) from few controller names
 	componentToControllerMap := map[string]string{
-		componentApi.CodeFlareComponentName:            "codeflare-operator-manager",
 		componentApi.DashboardComponentName:            "dashboard",
 		componentApi.DataSciencePipelinesComponentName: "data-science-pipelines-operator-controller-manager",
 		componentApi.FeastOperatorComponentName:        "feast-operator-controller-manager",
@@ -395,11 +394,13 @@ func (tc *DSCTestCtx) ValidateComponentsDeploymentFailure(t *testing.T) {
 
 	t.Log("Verifying component count matches DSC Components struct")
 	expectedComponentCount := reflect.TypeOf(dscv1.Components{}).NumField()
-	tc.g.Expect(componentsLength).Should(Equal(expectedComponentCount),
+	excludedComponents := 1 // TODO: Remove CodeFlare component in DSC v2
+	expectedTestableComponents := expectedComponentCount - excludedComponents
+	tc.g.Expect(componentsLength).Should(Equal(expectedTestableComponents),
 		"allComponents list is out of sync with DSC Components struct. "+
 			"Expected %d components but found %d. "+
 			"Please update the allComponents list when adding new components.",
-		expectedComponentCount, componentsLength)
+		expectedTestableComponents, componentsLength)
 
 	// Force monitoring to use 2 replicas for consistent quota test behavior
 	t.Log("Configuring monitoring to use 2 replicas for consistent quota test")
