@@ -7,7 +7,7 @@ GITHUB_URL="https://github.com"
 # in the format of "repo-org:repo-name:ref-name:source-folder" and key is the target folder under manifests/
 # ref-name can be a branch name, tag name, or a commit SHA (7-40 hex characters)
 declare -A COMPONENT_MANIFESTS=(
-    ["dashboard"]="opendatahub-io:odh-dashboard:5af8c3495ea5239c07b7c8e06a2b78525065c1e4:manifests"
+    ["dashboard"]="opendatahub-io:odh-dashboard:main:manifests"
     ["workbenches/kf-notebook-controller"]="opendatahub-io:kubeflow:main:components/notebook-controller/config"
     ["workbenches/odh-notebook-controller"]="opendatahub-io:kubeflow:main:components/odh-notebook-controller/config"
     ["workbenches/notebooks"]="opendatahub-io:notebooks:main:manifests"
