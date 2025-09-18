@@ -5,8 +5,9 @@ GITHUB_URL="https://github.com"
 
 # COMPONENT_MANIFESTS is a list of components repositories info to fetch the manifests
 # in the format of "repo-org:repo-name:ref-name:source-folder" and key is the target folder under manifests/
+# ref-name can be a branch name, tag name, or a commit SHA (7-40 hex characters)
 declare -A COMPONENT_MANIFESTS=(
-    ["dashboard"]="opendatahub-io:odh-dashboard:main:manifests"
+    ["dashboard"]="opendatahub-io:odh-dashboard:5af8c3495ea5239c07b7c8e06a2b78525065c1e4:manifests"
     ["workbenches/kf-notebook-controller"]="opendatahub-io:kubeflow:main:components/notebook-controller/config"
     ["workbenches/odh-notebook-controller"]="opendatahub-io:kubeflow:main:components/odh-notebook-controller/config"
     ["workbenches/notebooks"]="opendatahub-io:notebooks:main:manifests"
@@ -36,7 +37,8 @@ declare -A PLATFORM_MANIFESTS=(
 )
 
 # Allow overwriting repo using flags component=repo
-pattern="^[a-zA-Z0-9_.-]+:[a-zA-Z0-9_.-]+:[a-zA-Z0-9_./-]+:[a-zA-Z0-9_./-]+$"
+# Updated pattern to accept commit SHAs (7-40 hex chars) in addition to branches/tags
+pattern="^[a-zA-Z0-9_.-]+:[a-zA-Z0-9_.-]+:([a-zA-Z0-9_./-]+|[a-f0-9]{7,40}):[a-zA-Z0-9_./-]+$"
 if [ "$#" -ge 1 ]; then
     for arg in "$@"; do
         if [[ $arg == --* ]]; then
@@ -62,22 +64,66 @@ fi
 TMP_DIR=$(mktemp -d -t "odh-manifests.XXXXXXXXXX")
 trap '{ rm -rf -- "$TMP_DIR"; }' EXIT
 
+function try_fetch_ref()
+{
+    local repo=$1
+    local ref_type=$2  # "tags" or "heads"
+    local ref=$3
+
+    local git_ref="refs/$ref_type/$ref"
+    local ref_name=$([[ $ref_type == "tags" ]] && echo "tag" || echo "branch")
+
+    if git ls-remote --exit-code "$repo" "$git_ref" &>/dev/null; then
+        if git fetch -q --depth 1 "$repo" "$git_ref" && git reset -q --hard FETCH_HEAD; then
+            return 0
+        else
+            echo "ERROR: Failed to fetch $ref_name $ref from $repo"
+            return 1
+        fi
+    fi
+    return 1
+}
+
 function git_fetch_ref()
 {
-
     local repo=$1
     local ref=$2
     local dir=$3
-    local git_fetch="git fetch -q --depth 1 $repo"
 
     mkdir -p $dir
     pushd $dir &>/dev/null
     git init -q
-    # try tag first, avoid printing fatal: couldn't find remote ref
-    if ! $git_fetch refs/tags/$ref 2>/dev/null ; then
-        $git_fetch refs/heads/$ref
+
+    # Try to fetch as tag first, then as branch
+    if try_fetch_ref "$repo" "tags" "$ref" || try_fetch_ref "$repo" "heads" "$ref"; then
+        # Successfully fetched tag or branch
+        :  # no-op, we're done
+    else
+        # If not found as branch or tag, check if it looks like a commit SHA
+        if [[ $ref =~ ^[a-f0-9]{7,40}$ ]]; then
+            # For commit SHA, we need to fetch more than just depth=1
+            # since the commit might not be at the tip of any branch
+            git remote add origin $repo
+            if ! git fetch -q origin; then
+                echo "ERROR: Failed to fetch from repository $repo"
+                popd &>/dev/null
+                return 1
+            fi
+            if ! git reset -q --hard $ref 2>/dev/null; then
+                echo "ERROR: Commit SHA $ref not found in repository $repo"
+                popd &>/dev/null
+                return 1
+            fi
+        else
+            echo "ERROR: '$ref' is not a valid branch, tag, or commit SHA in repository $repo"
+            echo "You can check available refs with:"
+            echo "  git ls-remote --heads $repo  # for branches"
+            echo "  git ls-remote --tags $repo   # for tags"
+            popd &>/dev/null
+            return 1
+        fi
     fi
-    git reset -q --hard FETCH_HEAD
+
     popd &>/dev/null
 }
 
@@ -103,7 +149,10 @@ download_manifest() {
         return
     fi
 
-    git_fetch_ref ${repo_url} ${repo_ref} ${repo_dir}
+    if ! git_fetch_ref ${repo_url} ${repo_ref} ${repo_dir}; then
+        echo "ERROR: Failed to fetch ref '${repo_ref}' from '${repo_url}' for component '${key}'"
+        return 1
+    fi
 
     mkdir -p ./opt/manifests/${target_path}
     cp -rf ${repo_dir}/${source_path}/* ./opt/manifests/${target_path}
