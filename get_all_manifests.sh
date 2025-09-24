@@ -11,7 +11,7 @@ GITHUB_URL="https://github.com"
 # 2. "tag" - immutable reference (e.g., v1.0.0)
 # 3. "branch@commit-sha" - tracks branch but pinned to specific commit (e.g., main@a1b2c3d4)
 declare -A COMPONENT_MANIFESTS=(
-    ["dashboard"]="opendatahub-io:odh-dashboard:main@1d777fe9b25240f0bd02de90b012c514309c6e63:manifests"
+    ["dashboard"]="opendatahub-io:odh-dashboard:main@2276061cdee1213e374ef7d24f7c199a4baa49fb:manifests"
     ["workbenches/kf-notebook-controller"]="opendatahub-io:kubeflow:main@e028f5705420c872f3878f9dd8fd95c074f871b8:components/notebook-controller/config"
     ["workbenches/odh-notebook-controller"]="opendatahub-io:kubeflow:main@e028f5705420c872f3878f9dd8fd95c074f871b8:components/odh-notebook-controller/config"
     ["workbenches/notebooks"]="opendatahub-io:notebooks:main@56c9cdef988a91620c230ce450b99b513866ea25:manifests"
