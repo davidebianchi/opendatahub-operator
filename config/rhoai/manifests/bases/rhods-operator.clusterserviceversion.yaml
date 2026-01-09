@@ -86,7 +86,8 @@ metadata:
       "trainingoperators.components.platform.opendatahub.io", "trustyais.components.platform.opendatahub.io",
       "workbenches.components.platform.opendatahub.io", "monitorings.services.platform.opendatahub.io",
       "modelcontrollers.components.platform.opendatahub.io", "feastoperators.components.platform.opendatahub.io",
-      "llamastackoperators.components.platform.opendatahub.io", "mlflowoperators.components.platform.opendatahub.io"]
+      "llamastackoperators.components.platform.opendatahub.io", "mlflowoperators.components.platform.opendatahub.io"
+      "modelsasservices.components.platform.opendatahub.io"]
     repository: https://github.com/red-hat-data-services/rhods-operator
     support: Red Hat OpenShift AI
   name: rhods-operator.v2.0.0
@@ -99,6 +100,11 @@ spec:
       displayName: Hardware Profile
       kind: HardwareProfile
       name: hardwareprofiles.infrastructure.opendatahub.io
+      version: v1alpha1
+    - description: Trainer is the Schema for the trainers API
+      displayName: Trainer
+      kind: Trainer
+      name: trainers.components.platform.opendatahub.io
       version: v1alpha1
     - description: Auth is the Schema for the auths API
       displayName: Auth
@@ -185,11 +191,6 @@ spec:
       displayName: Ray
       kind: Ray
       name: rays.components.platform.opendatahub.io
-      version: v1alpha1
-    - description: Trainer is the Schema for the trainers API
-      displayName: Trainer
-      kind: Trainer
-      name: trainers.components.platform.opendatahub.io
       version: v1alpha1
     - description: TrainingOperator is the Schema for the trainingoperators API
       displayName: Training Operator
