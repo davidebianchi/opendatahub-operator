@@ -99,6 +99,7 @@ linters:
         - gomega.AsyncAssertion
         - labels.Selector
         - manager.Manager
+        - factory.Operator
     lll:
       line-length: 180
     nolintlint:

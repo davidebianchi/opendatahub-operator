@@ -17,75 +17,17 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"strings"
 
-	ocappsv1 "github.com/openshift/api/apps/v1" //nolint:importas //reason: conflicts with appsv1 "k8s.io/api/apps/v1"
-	buildv1 "github.com/openshift/api/build/v1"
-	configv1 "github.com/openshift/api/config/v1"
-	consolev1 "github.com/openshift/api/console/v1"
-	imagev1 "github.com/openshift/api/image/v1"
-	oauthv1 "github.com/openshift/api/oauth/v1"
-	operatorv1 "github.com/openshift/api/operator/v1"
-	routev1 "github.com/openshift/api/route/v1"
-	securityv1 "github.com/openshift/api/security/v1"
-	templatev1 "github.com/openshift/api/template/v1"
-	userv1 "github.com/openshift/api/user/v1"
-	ofapiv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	ofapiv2 "github.com/operator-framework/api/pkg/operators/v2"
-	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	appsv1 "k8s.io/api/apps/v1"
-	authorizationv1 "k8s.io/api/authorization/v1"
-	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	crtlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
-	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	ctrlwebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
-	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/opendatahub-io/opendatahub-operator/v2/api/common"
-	componentApi "github.com/opendatahub-io/opendatahub-operator/v2/api/components/v1alpha1"
-	dscv1 "github.com/opendatahub-io/opendatahub-operator/v2/api/datasciencecluster/v1"
-	dscv2 "github.com/opendatahub-io/opendatahub-operator/v2/api/datasciencecluster/v2"
-	dsciv1 "github.com/opendatahub-io/opendatahub-operator/v2/api/dscinitialization/v1"
-	dsciv2 "github.com/opendatahub-io/opendatahub-operator/v2/api/dscinitialization/v2"
-	featurev1 "github.com/opendatahub-io/opendatahub-operator/v2/api/features/v1"
-	infrav1 "github.com/opendatahub-io/opendatahub-operator/v2/api/infrastructure/v1"
-	infrav1alpha1 "github.com/opendatahub-io/opendatahub-operator/v2/api/infrastructure/v1alpha1"
-	serviceApi "github.com/opendatahub-io/opendatahub-operator/v2/api/services/v1alpha1"
-	cr "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/components/registry"
-	dscctrl "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/datasciencecluster"
-	dscictrl "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/dscinitialization"
-	sr "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/services/registry"
-	"github.com/opendatahub-io/opendatahub-operator/v2/internal/webhook"
-	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/cluster"
-	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/cluster/gvk"
-	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/initialinstall"
+	operatorconfig "github.com/opendatahub-io/opendatahub-operator/v2/internal/bootstrap/config"
+	"github.com/opendatahub-io/opendatahub-operator/v2/internal/bootstrap/factory"
 	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/logger"
-	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/manager"
-	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/resources"
-	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/upgrade"
-	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/utils/flags"
 
+	// Import controllers to register them via init().
 	_ "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/components/dashboard"
 	_ "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/components/datasciencepipelines"
 	_ "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/components/feastoperator"
@@ -109,457 +51,39 @@ import (
 	_ "github.com/opendatahub-io/opendatahub-operator/v2/internal/controller/services/setup"
 )
 
-var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
-)
+var setupLog = ctrl.Log.WithName("setup")
 
-func init() { //nolint:gochecknoinits
-	utilruntime.Must(componentApi.AddToScheme(scheme))
-	utilruntime.Must(serviceApi.AddToScheme(scheme))
-	utilruntime.Must(infrav1alpha1.AddToScheme(scheme))
-	utilruntime.Must(infrav1.AddToScheme(scheme))
-	// +kubebuilder:scaffold:scheme
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(dsciv1.AddToScheme(scheme))
-	utilruntime.Must(dsciv2.AddToScheme(scheme))
-	utilruntime.Must(dscv1.AddToScheme(scheme))
-	utilruntime.Must(dscv2.AddToScheme(scheme))
-	utilruntime.Must(featurev1.AddToScheme(scheme))
-	utilruntime.Must(networkingv1.AddToScheme(scheme))
-	utilruntime.Must(rbacv1.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
-	utilruntime.Must(routev1.Install(scheme))
-	utilruntime.Must(appsv1.AddToScheme(scheme))
-	utilruntime.Must(oauthv1.Install(scheme))
-	utilruntime.Must(ofapiv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(userv1.Install(scheme))
-	utilruntime.Must(ofapiv2.AddToScheme(scheme))
-	utilruntime.Must(ocappsv1.Install(scheme))
-	utilruntime.Must(buildv1.Install(scheme))
-	utilruntime.Must(imagev1.Install(scheme))
-	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
-	utilruntime.Must(admissionregistrationv1.AddToScheme(scheme))
-	utilruntime.Must(promv1.AddToScheme(scheme))
-	utilruntime.Must(operatorv1.Install(scheme))
-	utilruntime.Must(consolev1.AddToScheme(scheme))
-	utilruntime.Must(securityv1.Install(scheme))
-	utilruntime.Must(templatev1.Install(scheme))
-	utilruntime.Must(gwapiv1.Install(scheme))
-}
-
-func initComponents(_ context.Context, p common.Platform) error {
-	return cr.ForEach(func(ch cr.ComponentHandler) error {
-		return ch.Init(p)
-	})
-}
-
-func initServices(_ context.Context, p common.Platform) error {
-	return sr.ForEach(func(sh sr.ServiceHandler) error {
-		return sh.Init(p)
-	})
-}
-
-// Create a config struct with viper's mapstructure.
-type OperatorConfig struct {
-	MetricsAddr         string `mapstructure:"metrics-bind-address"`
-	HealthProbeAddr     string `mapstructure:"health-probe-bind-address"`
-	LeaderElection      bool   `mapstructure:"leader-elect"`
-	MonitoringNamespace string `mapstructure:"dsc-monitoring-namespace"`
-	LogMode             string `mapstructure:"log-mode"`
-	PprofAddr           string `mapstructure:"pprof-bind-address"`
-
-	// Zap logging configuration
-	ZapDevel        bool   `mapstructure:"zap-devel"`
-	ZapEncoder      string `mapstructure:"zap-encoder"`
-	ZapLogLevel     string `mapstructure:"zap-log-level"`
-	ZapStacktrace   string `mapstructure:"zap-stacktrace-level"`
-	ZapTimeEncoding string `mapstructure:"zap-time-encoding"`
-}
-
-func LoadConfig() (*OperatorConfig, error) {
-	var operatorConfig OperatorConfig
-	if err := viper.Unmarshal(&operatorConfig); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal operator manager config: %w", err)
-	}
-	return &operatorConfig, nil
-}
-
-func main() { //nolint:funlen,maintidx,gocyclo
-	// Viper settings
-	viper.SetEnvPrefix("ODH_MANAGER")
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.AutomaticEnv()
-
-	// define flags and env vars
-	if err := flags.AddOperatorFlagsAndEnvvars(viper.GetEnvPrefix()); err != nil {
-		fmt.Printf("Error in adding flags or binding env vars: %s", err.Error())
-		os.Exit(1)
-	}
-
-	// parse and bind flags
-	pflag.Parse()
-	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-		fmt.Printf("Error in binding flags: %s", err.Error())
-		os.Exit(1)
-	}
-
-	oconfig, err := LoadConfig()
+func main() {
+	cfg, err := operatorconfig.LoadConfig()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %s", err.Error())
 		os.Exit(1)
 	}
 
-	// After getting the zap related configs an ad hoc flag set is created so the zap BindFlags mechanism can be reused
-	zapFlagSet := flags.NewZapFlagSet()
+	ctrl.SetLogger(logger.NewLogger(cfg.LogMode, cfg.ZapOptions))
 
-	opts := zap.Options{}
-	opts.BindFlags(zapFlagSet)
-
-	err = flags.ParseZapFlags(zapFlagSet, oconfig.ZapDevel, oconfig.ZapEncoder, oconfig.ZapLogLevel, oconfig.ZapStacktrace, oconfig.ZapTimeEncoding)
-	if err != nil {
-		fmt.Printf("Error in parsing zap flags: %s", err.Error())
-		os.Exit(1)
-	}
-
-	ctrl.SetLogger(logger.NewLogger(oconfig.LogMode, &opts))
-
-	// root context
+	// Root context with signal handling
 	ctx := ctrl.SetupSignalHandler()
 	ctx = logf.IntoContext(ctx, setupLog)
-	// Create new uncached client to run initial setup
-	setupCfg, err := config.GetConfig()
+
+	// Create factory and get operator
+	f := factory.NewFactory(cfg)
+	op, err := f.Create(factory.OperatorTypeMain)
 	if err != nil {
-		setupLog.Error(err, "error getting config for setup")
+		setupLog.Error(err, "unable to create operator")
 		os.Exit(1)
 	}
 
-	// This client does not use the cache.
-	setupClient, err := client.New(setupCfg, client.Options{Scheme: scheme})
-	if err != nil {
-		setupLog.Error(err, "error getting client for setup")
+	// Setup operator
+	if err := op.Setup(ctx); err != nil {
+		setupLog.Error(err, "unable to setup operator")
 		os.Exit(1)
 	}
 
-	err = cluster.Init(ctx, setupClient)
-	if err != nil {
-		setupLog.Error(err, "unable to initialize cluster config")
+	// Start operator
+	setupLog.Info("starting operator")
+	if err := op.Start(ctx); err != nil {
+		setupLog.Error(err, "problem running operator")
 		os.Exit(1)
 	}
-
-	// Get operator platform
-	release := cluster.GetRelease()
-	platform := release.Name
-
-	if err := initServices(ctx, platform); err != nil {
-		setupLog.Error(err, "unable to init services")
-		os.Exit(1)
-	}
-
-	if err := initComponents(ctx, platform); err != nil {
-		setupLog.Error(err, "unable to init components")
-		os.Exit(1)
-	}
-
-	secretCache, err := createSecretCacheConfig(platform)
-	if err != nil {
-		setupLog.Error(err, "unable to get application namespace into cache")
-		os.Exit(1)
-	}
-
-	oDHCache, err := createODHGeneralCacheConfig(platform)
-	if err != nil {
-		setupLog.Error(err, "unable to get application namespace into cache")
-		os.Exit(1)
-	}
-
-	cacheOptions := cache.Options{
-		Scheme: scheme,
-		ByObject: map[client.Object]cache.ByObject{
-			// Cannot find a label on various screts, so we need to watch all secrets
-			// this include, monitoring, dashboard, trustcabundle default cert etc for these NS
-			&corev1.Secret{}: {
-				Namespaces: secretCache,
-			},
-			// it is hard to find a label can be used for both trustCAbundle configmap and inferenceservice-config and deletionCM
-			&corev1.ConfigMap{}: {
-				Namespaces: oDHCache,
-			},
-			// For domain to get OpenshiftIngress and default cert
-			&operatorv1.IngressController{}: {
-				Field: fields.Set{"metadata.name": "default"}.AsSelector(),
-			},
-			// For authentication CR "cluster"
-			&configv1.Authentication{}: {
-				Field: fields.Set{"metadata.name": cluster.ClusterAuthenticationObj}.AsSelector(),
-			},
-			// for prometheus and black-box deployment and ones we owns
-			&appsv1.Deployment{}: {
-				Namespaces: oDHCache,
-			},
-			// kueue + monitoring need prometheusrules
-			&promv1.PrometheusRule{}: {
-				Namespaces: oDHCache,
-			},
-			&promv1.ServiceMonitor{}: {
-				Namespaces: oDHCache,
-			},
-			&routev1.Route{}: {
-				Namespaces: oDHCache,
-			},
-			&networkingv1.NetworkPolicy{}: {
-				Namespaces: oDHCache,
-			},
-			&rbacv1.Role{}: {
-				Namespaces: oDHCache,
-			},
-			&rbacv1.RoleBinding{}: {
-				Namespaces: oDHCache,
-			},
-		},
-		DefaultTransform: func(in any) (any, error) {
-			// Nilcheck managed fields to avoid hitting https://github.com/kubernetes/kubernetes/issues/124337
-			if obj, err := meta.Accessor(in); err == nil && obj.GetManagedFields() != nil {
-				obj.SetManagedFields(nil)
-			}
-
-			return in, nil
-		},
-	}
-
-	ctrlMgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{ // single pod does not need to have LeaderElection
-		Scheme:  scheme,
-		Metrics: ctrlmetrics.Options{BindAddress: oconfig.MetricsAddr},
-		WebhookServer: ctrlwebhook.NewServer(ctrlwebhook.Options{
-			Port: 9443,
-			// TLSOpts: , // TODO: it was not set in the old code
-		}),
-		PprofBindAddress:       oconfig.PprofAddr,
-		HealthProbeBindAddress: oconfig.HealthProbeAddr,
-		Cache:                  cacheOptions,
-		LeaderElection:         oconfig.LeaderElection,
-		LeaderElectionID:       "07ed84f7.opendatahub.io",
-		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
-		// when the Manager ends. This requires the binary to immediately end when the
-		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
-		// speeds up voluntary leader transitions as the new leader don't have to wait
-		// LeaseDuration time first.
-		//
-		// In the default scaffold provided, the program ends immediately after
-		// the manager stops, so would be fine to enable this option. However,
-		// if you are doing or is intended to do any operation such as perform cleanups
-		// after the manager stops then its usage might be unsafe.
-		// LeaderElectionReleaseOnCancel: true,
-		Client: client.Options{
-			Cache: &client.CacheOptions{
-				DisableFor: []client.Object{
-					resources.GvkToUnstructured(gvk.OpenshiftIngress),
-					&ofapiv1alpha1.Subscription{},
-					&authorizationv1.SelfSubjectRulesReview{},
-					&corev1.Pod{},
-					&userv1.Group{},
-					&ofapiv1alpha1.CatalogSource{},
-				},
-				// Set it to true so the cache-backed client reads unstructured objects
-				// or lists from the cache instead of a live lookup.
-				Unstructured: true,
-			},
-		},
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-
-	// Wrap the manager to return the wrapped client from GetClient()
-	mgr := manager.New(ctrlMgr)
-
-	// Register all webhooks using the helper
-	if err := webhook.RegisterAllWebhooks(mgr); err != nil {
-		setupLog.Error(err, "unable to register webhooks")
-		os.Exit(1)
-	}
-
-	if err = (&dscictrl.DSCInitializationReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("dscinitialization-controller"),
-	}).SetupWithManager(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "DSCInitiatlization")
-		os.Exit(1)
-	}
-
-	if err = dscctrl.NewDataScienceClusterReconciler(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "DataScienceCluster")
-		os.Exit(1)
-	}
-
-	// Initialize service reconcilers
-	if err := CreateServiceReconcilers(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create service controllers")
-		os.Exit(1)
-	}
-
-	// Initialize component reconcilers
-	if err = CreateComponentReconcilers(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create component controllers")
-		os.Exit(1)
-	}
-
-	// Check if user opted for disabling DSC configuration
-	disableDSCConfig, existDSCConfig := os.LookupEnv("DISABLE_DSC_CONFIG")
-	if existDSCConfig && disableDSCConfig != "false" {
-		setupLog.Info("DSCI auto creation is disabled")
-	} else {
-		createDefaultDSCIFunc := LeaderElectionRunnableFunc(func(ctx context.Context) error {
-			setupLog.Info("create default DSCI")
-			err := initialinstall.CreateDefaultDSCI(ctx, setupClient, platform, oconfig.MonitoringNamespace)
-			if err != nil {
-				setupLog.Error(err, "unable to create initial setup for the operator")
-			}
-			return err
-		})
-
-		err := mgr.Add(createDefaultDSCIFunc)
-		if err != nil {
-			setupLog.Error(err, "error scheduling DSCI creation")
-			os.Exit(1)
-		}
-	}
-
-	// Create default DSC CR for managed RHOAI
-	if platform == cluster.ManagedRhoai {
-		createDefaultDSCFunc := LeaderElectionRunnableFunc(func(ctx context.Context) error {
-			setupLog.Info("create default DSC")
-			err := initialinstall.CreateDefaultDSC(ctx, setupClient)
-			if err != nil {
-				setupLog.Error(err, "unable to create default DSC CR by the operator")
-			}
-			return err
-		})
-		err := mgr.Add(createDefaultDSCFunc)
-		if err != nil {
-			setupLog.Error(err, "error scheduling DSC creation")
-			os.Exit(1)
-		}
-	}
-
-	// Cleanup resources from previous v2 releases
-	cleanup := LeaderElectionRunnableFunc(func(ctx context.Context) error {
-		setupLog.Info("run upgrade task")
-		if err := upgrade.CleanupExistingResource(ctx, setupClient); err != nil {
-			setupLog.Error(err, "unable to perform cleanup")
-			return err
-		}
-		return nil
-	})
-
-	err = mgr.Add(cleanup)
-	if err != nil {
-		setupLog.Error(err, "error remove deprecated resources from previous version")
-	}
-
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
-}
-
-//nolint:ireturn
-func LeaderElectionRunnableFunc(fn crtlmanager.RunnableFunc) crtlmanager.Runnable {
-	return &LeaderElectionRunnableWrapper{Fn: fn}
-}
-
-type LeaderElectionRunnableWrapper struct {
-	Fn crtlmanager.RunnableFunc
-}
-
-func (l *LeaderElectionRunnableWrapper) Start(ctx context.Context) error {
-	return l.Fn(ctx)
-}
-
-func (l *LeaderElectionRunnableWrapper) NeedLeaderElection() bool {
-	return true
-}
-
-func getCommonCache(platform common.Platform) (map[string]cache.Config, error) {
-	namespaceConfigs := map[string]cache.Config{}
-
-	// networkpolicy need operator namespace
-	operatorNs, err := cluster.GetOperatorNamespace()
-	if err != nil {
-		return nil, err
-	}
-
-	namespaceConfigs[operatorNs] = cache.Config{}
-	namespaceConfigs["redhat-ods-monitoring"] = cache.Config{}
-
-	// Get application namespace from cluster config
-	appNamespace := cluster.GetApplicationNamespace()
-	namespaceConfigs[appNamespace] = cache.Config{}
-
-	// Add console link namespace for managed RHOAI
-	if platform == cluster.ManagedRhoai {
-		namespaceConfigs[cluster.NamespaceConsoleLink] = cache.Config{}
-	}
-
-	return namespaceConfigs, nil
-}
-
-func createSecretCacheConfig(platform common.Platform) (map[string]cache.Config, error) {
-	namespaceConfigs, err := getCommonCache(platform)
-	if err != nil {
-		return nil, err
-	}
-
-	namespaceConfigs["openshift-ingress"] = cache.Config{}
-
-	return namespaceConfigs, nil
-}
-
-func createODHGeneralCacheConfig(platform common.Platform) (map[string]cache.Config, error) {
-	namespaceConfigs, err := getCommonCache(platform)
-	if err != nil {
-		return nil, err
-	}
-
-	namespaceConfigs["openshift-operators"] = cache.Config{} // for dependent operators installed namespace
-	namespaceConfigs["openshift-ingress"] = cache.Config{}   // for gateway auth proxy resources
-
-	return namespaceConfigs, nil
-}
-
-func CreateComponentReconcilers(ctx context.Context, mgr *manager.Manager) error {
-	l := logf.FromContext(ctx)
-
-	return cr.ForEach(func(ch cr.ComponentHandler) error {
-		l.Info("creating reconciler", "type", "component", "name", ch.GetName())
-		if err := ch.NewComponentReconciler(ctx, mgr); err != nil {
-			return fmt.Errorf("error creating %s component reconciler: %w", ch.GetName(), err)
-		}
-
-		return nil
-	})
-}
-
-func CreateServiceReconcilers(ctx context.Context, mgr *manager.Manager) error {
-	log := logf.FromContext(ctx)
-
-	return sr.ForEach(func(sh sr.ServiceHandler) error {
-		log.Info("creating reconciler", "type", "service", "name", sh.GetName())
-		if err := sh.NewReconciler(ctx, mgr); err != nil {
-			return fmt.Errorf("error creating %s service reconciler: %w", sh.GetName(), err)
-		}
-		return nil
-	})
 }
