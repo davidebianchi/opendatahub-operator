@@ -527,7 +527,7 @@ func GvkToPartial(gvk schema.GroupVersionKind) *metav1.PartialObjectMetadata {
 //
 // Returns:
 //   - error: nil on success, or an error with context if the operation fails
-func Apply(ctx context.Context, cli client.Client, in client.Object, opts ...client.PatchOption) error {
+func Apply(ctx context.Context, cli client.Client, in client.Object, opts ...client.ApplyOption) error {
 	err := EnsureGroupVersionKind(cli.Scheme(), in)
 	if err != nil {
 		return fmt.Errorf("failed to ensure GVK: %w", err)
@@ -546,11 +546,11 @@ func Apply(ctx context.Context, cli client.Client, in client.Object, opts ...cli
 	unstructured.RemoveNestedField(u.Object, "metadata", "resourceVersion")
 	unstructured.RemoveNestedField(u.Object, "status")
 
-	err = cli.Patch(ctx, u, client.Apply, opts...)
+	err = cli.Apply(ctx, client.ApplyConfigurationFromUnstructured(u), opts...)
 	if err != nil {
 		// Include GVK and namespace/name for debugging context without logging sensitive object data
 		objRef := FormatObjectReference(u)
-		return fmt.Errorf("unable to patch %s: %w", objRef, err)
+		return fmt.Errorf("unable to apply %s: %w", objRef, err)
 	}
 
 	// Write back the modified object so callers can access the patched object.
@@ -579,7 +579,7 @@ func Apply(ctx context.Context, cli client.Client, in client.Object, opts ...cli
 //
 // Returns:
 //   - error: nil on success, or an error with context if the operation fails
-func ApplyStatus(ctx context.Context, cli client.Client, in client.Object, opts ...client.SubResourcePatchOption) error {
+func ApplyStatus(ctx context.Context, cli client.Client, in client.Object, opts ...client.SubResourceApplyOption) error {
 	err := EnsureGroupVersionKind(cli.Scheme(), in)
 	if err != nil {
 		return fmt.Errorf("failed to ensure GVK: %w", err)
@@ -597,14 +597,14 @@ func ApplyStatus(ctx context.Context, cli client.Client, in client.Object, opts 
 	unstructured.RemoveNestedField(u.Object, "metadata", "managedFields")
 	unstructured.RemoveNestedField(u.Object, "metadata", "resourceVersion")
 
-	err = cli.Status().Patch(ctx, u, client.Apply, opts...)
+	err = cli.Status().Apply(ctx, client.ApplyConfigurationFromUnstructured(u), opts...)
 	switch {
 	case k8serr.IsNotFound(err): // Cannot be removed like in Apply func because reconciler_finalizer_test.go would then throw an error, needs extensive test rewrite
 		return nil
 	case err != nil:
 		// Include GVK and namespace/name for debugging context without logging sensitive object data
 		objRef := FormatObjectReference(u)
-		return fmt.Errorf("unable to patch %s status: %w", objRef, err)
+		return fmt.Errorf("unable to apply %s status: %w", objRef, err)
 	}
 
 	// Write back the modified object so callers can access the patched object.

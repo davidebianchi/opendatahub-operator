@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -58,7 +58,7 @@ type Reconciler struct {
 	Finalizer  []actions.Fn
 	Log        logr.Logger
 	Controller controller.Controller
-	Recorder   record.EventRecorder
+	Recorder   events.EventRecorder
 	Release    common.Release
 
 	name                     string
@@ -82,7 +82,7 @@ func NewReconciler[T common.PlatformObject](mgr manager.Manager, name string, ob
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Log:      ctrl.Log.WithName("controllers").WithName(name),
-		Recorder: mgr.GetEventRecorderFor(name),
+		Recorder: mgr.GetEventRecorder(name),
 		Release:  cluster.GetRelease(),
 		name:     name,
 		instanceFactory: func() (common.PlatformObject, error) {
@@ -338,10 +338,12 @@ func (r *Reconciler) apply(ctx context.Context, res common.PlatformObject) error
 	)
 
 	if err != nil && !k8serr.IsNotFound(err) {
-		r.Recorder.Event(
+		r.Recorder.Eventf(
 			res,
+			nil,
 			corev1.EventTypeNormal,
 			"ReconcileError",
+			"Reconcile",
 			err.Error(),
 		)
 
@@ -349,10 +351,12 @@ func (r *Reconciler) apply(ctx context.Context, res common.PlatformObject) error
 	}
 
 	if provisionErr != nil {
-		r.Recorder.Event(
+		r.Recorder.Eventf(
 			res,
+			nil,
 			corev1.EventTypeWarning,
 			"ProvisioningError",
+			"Reconcile",
 			provisionErr.Error(),
 		)
 

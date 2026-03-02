@@ -1447,15 +1447,14 @@ func (tc *TestContext) ApproveInstallPlan(plan *ofapi.InstallPlan) {
 	// Prepare the InstallPlan object to be approved
 	obj := tc.createInstallPlan(plan.Name, plan.Namespace, plan.Spec.ClusterServiceVersionNames)
 
-	// Set up patch options
-	force := true
-	opt := &client.PatchOptions{
-		FieldManager: dscInstanceName,
-		Force:        &force,
-	}
-
 	// Apply the patch to approve the InstallPlan
-	err := tc.Client().Patch(tc.Context(), obj, client.Apply, opt)
+	err := resources.Apply(
+		tc.Context(),
+		tc.Client(),
+		obj,
+		client.FieldOwner(dscInstanceName),
+		client.ForceOwnership,
+	)
 	tc.g.Expect(err).
 		NotTo(
 			HaveOccurred(),

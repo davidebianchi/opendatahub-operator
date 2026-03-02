@@ -6,13 +6,10 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	dscv1 "github.com/opendatahub-io/opendatahub-operator/v2/api/datasciencecluster/v1"
@@ -30,8 +27,8 @@ type Defaulter struct {
 	Name string
 }
 
-// just assert that Defaulter implements webhook.CustomDefaulter.
-var _ webhook.CustomDefaulter = &Defaulter{}
+// just assert that Defaulter implements admission.Defaulter.
+var _ admission.Defaulter[*dscv1.DataScienceCluster] = &Defaulter{}
 
 // SetupWithManager registers the defaulting webhook with the provided controller-runtime manager.
 //
@@ -41,7 +38,7 @@ var _ webhook.CustomDefaulter = &Defaulter{}
 // Returns:
 //   - error: Always nil (for future extensibility).
 func (d *Defaulter) SetupWithManager(mgr ctrl.Manager) error {
-	mutateWebhook := admission.WithCustomDefaulter(mgr.GetScheme(), &dscv1.DataScienceCluster{}, d)
+	mutateWebhook := admission.WithDefaulter(mgr.GetScheme(), d)
 	mutateWebhook.LogConstructor = webhookutils.NewWebhookLogConstructor(d.Name)
 	mgr.GetWebhookServer().Register("/mutate-datasciencecluster-v1", mutateWebhook)
 	// No error to return currently, but return nil for future extensibility
@@ -52,19 +49,11 @@ func (d *Defaulter) SetupWithManager(mgr ctrl.Manager) error {
 //
 // Parameters:
 //   - ctx: Context for the admission request (logger is extracted from here).
-//   - obj: The runtime.Object to default (should be a *DataScienceCluster).
+//   - dsc: The DataScienceCluster object to default.
 //
 // Returns:
 //   - error: If the object is not a DataScienceCluster, or if defaulting fails.
-func (d *Defaulter) Default(ctx context.Context, obj runtime.Object) error {
-	dsc, isDSC := obj.(*dscv1.DataScienceCluster)
-	if !isDSC {
-		log := logf.FromContext(ctx)
-		err := fmt.Errorf("expected DataScienceCluster v1 but got a different type: %T", obj)
-		log.Error(err, "Got wrong type")
-		return err
-	}
-
+func (d *Defaulter) Default(ctx context.Context, dsc *dscv1.DataScienceCluster) error {
 	// Set default values
 	d.applyDefaults(ctx, dsc)
 	return nil
