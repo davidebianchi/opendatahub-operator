@@ -137,7 +137,6 @@ var (
 				componentApi.KserveComponentName:               kserveTestSuite,
 				componentApi.FeastOperatorComponentName:        feastOperatorTestSuite,
 				componentApi.LlamaStackOperatorComponentName:   llamastackOperatorTestSuite,
-				componentApi.MLflowOperatorComponentName:       mlflowOperatorTestSuite,
 				componentApi.SparkOperatorComponentName:        sparkOperatorTestSuite,
 			},
 			{
@@ -145,6 +144,8 @@ var (
 				componentApi.KueueComponentName: kueueTestSuite,
 				// ModelController tests depends on KServe and ModelRegistry, so must not run with KServe, ModelRegistry, TrustyAI or ModelsAsService tests in parallel
 				componentApi.ModelControllerComponentName: modelControllerTestSuite,
+				// Workbenches tests integration with MLflowOperator, so must not run with MLflowOperator tests in parallel
+				componentApi.MLflowOperatorComponentName: mlflowOperatorTestSuite,
 			},
 			{
 				// TrustyAI tests depends on KServe, so must not run with Kserve, ModelController or ModelsAsService tests in parallel
