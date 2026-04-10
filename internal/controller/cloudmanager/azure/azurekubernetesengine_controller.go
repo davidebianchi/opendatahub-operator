@@ -29,7 +29,9 @@ func NewReconciler(ctx context.Context, mgr ctrl.Manager, cfg *operatorconfig.Cl
 		WithAction(initialize).
 		ComposeWith(certmanager.Bootstrap[*ccmv1alpha1.AzureKubernetesEngine](
 			ccmv1alpha1.AzureKubernetesEngineInstanceName,
-			certmanager.DefaultBootstrapConfig(certmanager.WithOperatorCert(cfg.RhaiOperatorNamespace)),
+			certmanager.DefaultBootstrapConfig(
+				certmanager.WithOperatorCert(cfg.RhaiOperatorNamespace),
+			),
 		)).
 		WithActionE(cloudmanager.NewReconcileAction(resourceID)).
 		WithConditions(cloudmanager.ConditionsTypes...).
