@@ -23,6 +23,7 @@ import (
 	"github.com/opendatahub-io/opendatahub-operator/v2/pkg/resources"
 )
 
+// trigger related images action
 type componentHandler struct{}
 
 func NewHandler() *componentHandler { return &componentHandler{} }
