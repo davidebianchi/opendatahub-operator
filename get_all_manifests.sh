@@ -37,24 +37,24 @@ declare -A ODH_COMPONENT_MANIFESTS=(
 
 # RHOAI Component Manifests
 declare -A RHOAI_COMPONENT_MANIFESTS=(
-    ["dashboard"]="red-hat-data-services:odh-dashboard:rhoai-3.4@91d0620c9839db912b97164e863c0a4248084ee3:manifests"
-    ["workbenches/kf-notebook-controller"]="red-hat-data-services:kubeflow:rhoai-3.4@41652af3581ecf948e3bce05aca19d90d3eb0ad8:components/notebook-controller/config"
-    ["workbenches/odh-notebook-controller"]="red-hat-data-services:kubeflow:rhoai-3.4@41652af3581ecf948e3bce05aca19d90d3eb0ad8:components/odh-notebook-controller/config"
-    ["workbenches/notebooks"]="red-hat-data-services:notebooks:rhoai-3.4@bf50833f85f5bab09030cd4d0bd92da49f617d61:manifests"
-    ["kserve"]="red-hat-data-services:kserve:rhoai-3.4@51736b10a3f739c6d0d58e5eb37b5af267bc0b99:config"
-    ["ray"]="red-hat-data-services:kuberay:rhoai-3.4@b825f4adfc0a1cb122ce320228baceace2f1a2fa:ray-operator/config"
-    ["trustyai"]="red-hat-data-services:trustyai-service-operator:rhoai-3.4@2e913a65396fc67424e05fa4ccb03da608242eac:config"
-    ["modelregistry"]="red-hat-data-services:model-registry-operator:rhoai-3.4@015062c882a964d488f7c3151fac9a30b31623f5:config"
-    ["trainingoperator"]="red-hat-data-services:training-operator:rhoai-3.4@8d2e0bf502fcffa22545201339baf5bce96c8a63:manifests"
-    ["datasciencepipelines"]="red-hat-data-services:data-science-pipelines-operator:rhoai-3.4@b90290f65f67cb508a12d0e579e35776d89a4d48:config"
-    ["modelcontroller"]="red-hat-data-services:odh-model-controller:rhoai-3.4@421e05bd40489d010329946e9924bcd273209489:config"
-    ["feastoperator"]="red-hat-data-services:feast:rhoai-3.4@2f2ede6ec09bc7431e554eb3861e265d31458eec:infra/feast-operator/config"
-    ["llamastackoperator"]="red-hat-data-services:llama-stack-k8s-operator:rhoai-3.4@8cc0a4f19368988eeaf34702b2ddf1c771505661:config"
-    ["trainer"]="red-hat-data-services:trainer:rhoai-3.4@f5d41a3679067f707ab62e0ba442fd677903eb6a:manifests"
-    ["maas"]="red-hat-data-services:maas-billing:rhoai-3.4@cd60141fc66e2d2d651cb10ae3fc8066a01ff25d:deployment"
-    ["mlflowoperator"]="red-hat-data-services:mlflow-operator:rhoai-3.4@45ad3d560ce1e241733e55614d157f53c7cbeacc:config"
-    ["sparkoperator"]="red-hat-data-services:spark-operator:rhoai-3.4@8ecee53b4752854eeff7456ddaf9a81251147ca4:config"
-    ["wva"]="red-hat-data-services:workload-variant-autoscaler:rhoai-3.4@64c104fc254e32fb7af16a00008c61b61d0a7e56:config"
+    ["dashboard"]="red-hat-data-services:odh-dashboard:rhoai-3.5-ea.1@4e1397070d86e5b7d7391549381867544ecafdfb:manifests"
+    ["workbenches/kf-notebook-controller"]="red-hat-data-services:kubeflow:rhoai-3.5-ea.1@b3783d3f2a354cee6e34badf50dbf1a4f5a85170:components/notebook-controller/config"
+    ["workbenches/odh-notebook-controller"]="red-hat-data-services:kubeflow:rhoai-3.5-ea.1@b3783d3f2a354cee6e34badf50dbf1a4f5a85170:components/odh-notebook-controller/config"
+    ["workbenches/notebooks"]="red-hat-data-services:notebooks:rhoai-3.5-ea.1@5f2a939e33103ec8a23f7b39e6e628800a1c65d6:manifests"
+    ["kserve"]="red-hat-data-services:kserve:rhoai-3.5-ea.1@459a5bc1eeaed9312f17fc8ba447714bb72592c3:config"
+    ["ray"]="red-hat-data-services:kuberay:rhoai-3.5-ea.1@9f315b1db24b67b62f18c2155e691abf10f4b121:ray-operator/config"
+    ["trustyai"]="red-hat-data-services:trustyai-service-operator:rhoai-3.5-ea.1@d19ebc722eceab1f4c912f587944bfb5149fd156:config"
+    ["modelregistry"]="red-hat-data-services:model-registry-operator:rhoai-3.5-ea.1@8e4f90b89372dea44c6bc33f505b7a549a88c91b:config"
+    ["trainingoperator"]="red-hat-data-services:training-operator:rhoai-3.5-ea.1@30ea1e830752c81bc687dc38a78caddb05454c82:manifests"
+    ["datasciencepipelines"]="red-hat-data-services:data-science-pipelines-operator:rhoai-3.5-ea.1@69d4a5d7d04aec8d0b1e9f4edad3e6d5046e7238:config"
+    ["modelcontroller"]="red-hat-data-services:odh-model-controller:rhoai-3.5-ea.1@9c8efd1d71953a4f249831fe0ebb77b60a9a4046:config"
+    ["feastoperator"]="red-hat-data-services:feast:rhoai-3.5-ea.1@0e31ddf9b98cd1fa1748cb209e2d7bfd02868ab5:infra/feast-operator/config"
+    ["llamastackoperator"]="red-hat-data-services:llama-stack-k8s-operator:rhoai-3.5-ea.1@b4f40fe4ed716438d06d4a24d76d14b0db35d397:config"
+    ["trainer"]="red-hat-data-services:trainer:rhoai-3.5-ea.1@d54f35d9194cef89b3e282131e11cfa3aa336565:manifests"
+    ["maas"]="red-hat-data-services:maas-billing:rhoai-3.5-ea.1@8c11ac5fcbae794e6a52844a66e5afb71679eb5b:deployment"
+    ["mlflowoperator"]="red-hat-data-services:mlflow-operator:rhoai-3.5-ea.1@fb8aab9e5f75b444dbecd20208e84a48b6ee664a:config"
+    ["sparkoperator"]="red-hat-data-services:spark-operator:rhoai-3.5-ea.1@0647c33b75b58cecc21c54a5d42ec7d977fb4318:config"
+    ["wva"]="red-hat-data-services:workload-variant-autoscaler:rhoai-3.5-ea.1@88340fe99e0f7f1a1a6d7dc7e5d19f9d0e9a23b7:config"
 )
 
 # {ODH,RHOAI}_COMPONENT_CHARTS are lists of chart repositories info to fetch helm charts
@@ -71,10 +71,10 @@ declare -A ODH_COMPONENT_CHARTS=(
 
 # RHOAI Component Charts
 declare -A RHOAI_COMPONENT_CHARTS=(
-    ["cert-manager-operator"]="red-hat-data-services:odh-gitops:rhoai-3.4@eaeef9830e88ff9a6f588d4b1cb38efd3cb54cc2:charts/dependencies/cert-manager-operator"
-    ["lws-operator"]="red-hat-data-services:odh-gitops:rhoai-3.4@eaeef9830e88ff9a6f588d4b1cb38efd3cb54cc2:charts/dependencies/lws-operator"
-    ["sail-operator"]="red-hat-data-services:odh-gitops:rhoai-3.4@eaeef9830e88ff9a6f588d4b1cb38efd3cb54cc2:charts/dependencies/sail-operator"
-    ["gateway-api"]="red-hat-data-services:odh-gitops:rhoai-3.4@eaeef9830e88ff9a6f588d4b1cb38efd3cb54cc2:charts/dependencies/gateway-api"
+    ["cert-manager-operator"]="red-hat-data-services:odh-gitops:rhoai-3.5-ea.1@d0f01184c745236c165637e8724fc31b31daa879:charts/dependencies/cert-manager-operator"
+    ["lws-operator"]="red-hat-data-services:odh-gitops:rhoai-3.5-ea.1@d0f01184c745236c165637e8724fc31b31daa879:charts/dependencies/lws-operator"
+    ["sail-operator"]="red-hat-data-services:odh-gitops:rhoai-3.5-ea.1@d0f01184c745236c165637e8724fc31b31daa879:charts/dependencies/sail-operator"
+    ["gateway-api"]="red-hat-data-services:odh-gitops:rhoai-3.5-ea.1@d0f01184c745236c165637e8724fc31b31daa879:charts/dependencies/gateway-api"
 )
 
 # Select the appropriate manifest based on platform type
