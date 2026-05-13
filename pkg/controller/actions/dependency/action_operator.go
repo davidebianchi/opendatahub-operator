@@ -85,8 +85,9 @@ type CRDConfig struct {
 
 // action monitors dependent operators for degraded conditions and propagates them to the component CR.
 type action struct {
-	configs    []OperatorConfig
-	crdConfigs []CRDConfig
+	configs       []OperatorConfig
+	crdConfigs    []CRDConfig
+	conditionType string
 }
 
 // ActionOpts is a functional option for configuring the dependency action.
@@ -104,6 +105,16 @@ func MonitorOperator(config OperatorConfig) ActionOpts {
 func MonitorCRD(config CRDConfig) ActionOpts {
 	return func(a *action) {
 		a.crdConfigs = append(a.crdConfigs, config)
+	}
+}
+
+// WithConditionType overrides the condition type used to report dependency health.
+// Default: status.ConditionDependenciesAvailable.
+func WithConditionType(ct string) ActionOpts {
+	return func(a *action) {
+		if ct = strings.TrimSpace(ct); ct != "" {
+			a.conditionType = ct
+		}
 	}
 }
 
@@ -167,13 +178,13 @@ func (a *action) run(ctx context.Context, rr *odhtypes.ReconciliationRequest) er
 			severity = common.ConditionSeverityError
 		}
 		rr.Conditions.MarkFalse(
-			status.ConditionDependenciesAvailable,
+			a.conditionType,
 			cond.WithSeverity(severity),
 			cond.WithReason(dependencyDegradedReason),
 			cond.WithMessage("Dependencies degraded: %s", strings.Join(allDegraded, "; ")),
 		)
 	} else {
-		rr.Conditions.MarkTrue(status.ConditionDependenciesAvailable)
+		rr.Conditions.MarkTrue(a.conditionType)
 	}
 
 	return nil
@@ -326,7 +337,9 @@ func DefaultDegradedConditionFilter(condType, condStatus string) bool {
 // NewAction creates an action that monitors external operator health and propagates
 // degraded conditions to the caller's DependenciesAvailable status condition.
 func NewAction(opts ...ActionOpts) actions.Fn {
-	a := action{}
+	a := action{
+		conditionType: status.ConditionDependenciesAvailable,
+	}
 
 	for _, opt := range opts {
 		opt(&a)

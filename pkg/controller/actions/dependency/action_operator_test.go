@@ -420,6 +420,98 @@ func TestDependencyAction_VariableCRName(t *testing.T) {
 	})
 }
 
+func TestDependencyAction_WithConditionType(t *testing.T) {
+	tests := []struct {
+		name             string
+		crCondType       string
+		crCondStatus     string
+		reason           string
+		message          string
+		expectedStatus   metav1.ConditionStatus
+		expectedMsgMatch string
+	}{
+		{
+			name:             "degraded CR reports False on custom condition",
+			crCondType:       "Degraded",
+			crCondStatus:     "True",
+			reason:           "TestFailed",
+			message:          "Test failure",
+			expectedStatus:   metav1.ConditionFalse,
+			expectedMsgMatch: "Degraded=True",
+		},
+		{
+			name:           "healthy CR reports True on custom condition",
+			crCondType:     "Ready",
+			crCondStatus:   "True",
+			reason:         "Ready",
+			message:        "All good",
+			expectedStatus: metav1.ConditionTrue,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			envTest, err := envt.New()
+			g.Expect(err).NotTo(HaveOccurred())
+			t.Cleanup(func() { _ = envTest.Stop() })
+
+			ctx := context.Background()
+			cli := envTest.Client()
+
+			createTestOperatorCRD(t, g, ctx, envTest)
+
+			nsn := xid.New().String()
+			ns := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsn}}
+			g.Expect(cli.Create(ctx, &ns)).NotTo(HaveOccurred())
+			t.Cleanup(func() { _ = cli.Delete(ctx, &ns) })
+
+			customCondition := "CustomAvailable"
+
+			operatorCR := createOperatorCR(xid.New().String(), nsn, testOperatorGVK)
+			setCondition(g, operatorCR, tt.crCondType, tt.crCondStatus, tt.reason, tt.message)
+			createAndUpdateStatus(ctx, g, cli, operatorCR)
+			t.Cleanup(func() { _ = cli.Delete(ctx, operatorCR) })
+
+			instance := &componentApi.Kueue{
+				ObjectMeta: metav1.ObjectMeta{Name: xid.New().String()},
+			}
+
+			condManager := cond.NewManager(instance, status.ConditionTypeReady, customCondition, status.ConditionDependenciesAvailable)
+			rr := &types.ReconciliationRequest{
+				Client:     cli,
+				Instance:   instance,
+				Conditions: condManager,
+			}
+
+			action := dependency.NewAction(
+				dependency.WithConditionType(customCondition),
+				dependency.MonitorOperator(dependency.OperatorConfig{
+					OperatorGVK: testOperatorGVK,
+					CRName:      operatorCR.GetName(),
+					CRNamespace: nsn,
+				}),
+			)
+
+			err = action(ctx, rr)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			gotCond := condManager.GetCondition(customCondition)
+			g.Expect(gotCond).NotTo(BeNil())
+			g.Expect(gotCond.Status).To(Equal(tt.expectedStatus))
+
+			if tt.expectedMsgMatch != "" {
+				g.Expect(gotCond.Message).To(ContainSubstring(tt.expectedMsgMatch))
+			}
+
+			defaultCond := condManager.GetCondition(status.ConditionDependenciesAvailable)
+			g.Expect(defaultCond).NotTo(BeNil())
+			g.Expect(defaultCond.Status).To(Equal(metav1.ConditionUnknown))
+		})
+	}
+}
+
 // TestDependencyAction_MissingCRD verifies that DependenciesAvailable is True
 // when the external operator's CRD is not installed.
 func TestDependencyAction_MissingCRD(t *testing.T) {
